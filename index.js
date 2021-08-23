@@ -1,7 +1,10 @@
 const keys = require("./config/keys");
 const express = require("express");
+const cors = require("cors");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser").json();
+const bcrypt = require("bcrypt");
+require("./models/User");
 
 mongoose.connect(keys.MONGO_URI, {
   useNewUrlParser: true,
@@ -9,6 +12,7 @@ mongoose.connect(keys.MONGO_URI, {
 });
 
 const app = express();
+app.use(cors());
 app.use(bodyParser);
 
 require("./routes/user")(app);
