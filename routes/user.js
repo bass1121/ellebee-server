@@ -1,4 +1,7 @@
+const { hashPassword, verifyPassword } = require("../helper/auth");
+const keys = require("../config/keys");
 const mongoose = require("mongoose"); // importing mongoose
+const jwt = require("jsonwebtoken");
 const User = mongoose.model("user"); // importing mongoose model User.js
 
 module.exports = app => {
@@ -30,16 +33,18 @@ module.exports = app => {
         return;
       }
 
-      const newUser = new User(user);
-      newUser
-        .save()
-        .then(data => res.status(200).json({ message: "User created!", data }))
-        .catch(err =>
-          res
-            .status(500)
-            .json({ message: "Something went wrong...", data: err })
-        ); // basic error message
+      const hashedPassword = await hashPassword(user.password);
 
+      user.password = hashedPassword;
+
+      const newUser = new User(user);
+
+      const createdUser = await newUser.save();
+
+      const token = jwt.sign({ ...createdUser }, keys.SECRET_KEY, {
+        expiresIn: 14 * 24 * 60 * 60,
+      });
+      res.status(200).json({ token });
       return;
     }
     res.status(200).send({ message: "done", data: req.body });
