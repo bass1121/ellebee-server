@@ -7,22 +7,18 @@ const User = mongoose.model("user"); // importing mongoose model User.js
 module.exports = app => {
   app.post("/api/users", async (req, res) => {
     // sign up user
+    console.log(req.body);
 
     if (req.body.signup) {
-      const result = await User.findOne({ email: req.body.email }) // findOne checks for copycat emails and if true throws error
-        .then(res => {
-          if (res) {
-            return res;
-          }
-        })
-        .catch(() =>
-          res.status(500).json({ message: "Could not connect to database" })
-        ); // catch error for failure to connect
+      const result = await User.findOne({ email: req.body.email }); // findOne checks for copycat emails and if true throws error
+
+      console.log(result);
 
       if (result) {
-        res.status(422).send({ message: "Username already in use..." });
+        res.status(422).json({ message: "Username already in use..." });
         return;
       }
+      console.log("signup");
 
       const hashedPassword = await hashPassword(req.body.password);
 
@@ -61,6 +57,8 @@ module.exports = app => {
 
     // log in user
 
+    console.log("login");
+
     const { email, password } = req.body;
 
     const result = await User.findOne({ email });
@@ -88,6 +86,43 @@ module.exports = app => {
       lastName: result.lastName,
     };
 
-    res.status(200).send({ data: user });
+    const token = jwt.sign({ _id: user._id }, keys.SECRET_KEY, {
+      expiresIn: 14 * 24 * 60 * 60,
+    });
+
+    res.status(200).send({ user, token });
   }); // specifications on data
+
+  app.get(`/api/user/:slug`, async (req, res) => {
+    const id = req.params.slug;
+    const result = await User.findById(id);
+
+    const user = {
+      _id: result._id,
+      email: result.email,
+      admin: result.admin,
+      image: result.image,
+      username: result.username,
+      phoneNumber: result.phoneNumber,
+      firstName: result.firstName,
+      lastName: result.lastName,
+    };
+
+    res.status(200).json({ data: user });
+  });
+
+  app.patch(`/api/user/:slug`, async (req, res) => {
+    // TODO:
+    // MAKE THIS SHIT WORK
+    const id = req.params.slug;
+    const result = await User.findByIdAndUpdate({ _id: id }, req.body);
+
+    if (!result) {
+      res.send(404).json({ message: "Something went wrong..." });
+      return;
+    }
+
+    console.log(result);
+    res.status(200).json({ message: "Updated", data: result });
+  });
 };
