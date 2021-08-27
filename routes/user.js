@@ -3,6 +3,7 @@ const keys = require("../config/keys");
 const mongoose = require("mongoose"); // importing mongoose
 const jwt = require("jsonwebtoken");
 const User = mongoose.model("user"); // importing mongoose model User.js
+const { ObjectId } = require("mongodb");
 
 module.exports = app => {
   app.post("/api/users", async (req, res) => {
@@ -112,17 +113,48 @@ module.exports = app => {
   });
 
   app.patch(`/api/user/:slug`, async (req, res) => {
-    // TODO:
-    // MAKE THIS SHIT WORK
-    const id = req.params.slug;
-    const result = await User.findByIdAndUpdate({ _id: id }, req.body);
+    const user = {
+      email: req.body.email,
+      admin: req.body.admin,
+      image: req.body.image,
+      username: req.body.username,
+      phoneNumber: req.body.phoneNumber,
+      firstName: req.body.firstName,
+      lastName: req.body.lastName,
+    };
+
+    const _id = new ObjectId(req.params.slug);
+
+    console.log(user);
+
+    const result = await User.findByIdAndUpdate({ _id }, user, {
+      useFindAndModify: true,
+    });
 
     if (!result) {
       res.send(404).json({ message: "Something went wrong..." });
       return;
     }
 
-    console.log(result);
-    res.status(200).json({ message: "Updated", data: result });
+    const newUser = {
+      _id: result._id,
+      email: result.email,
+      admin: result.admin,
+      image: result.image,
+      username: result.username,
+      phoneNumber: result.phoneNumber,
+      firstName: result.firstName,
+      lastName: result.lastName,
+    };
+
+    res.status(200).json({ message: "Updated", data: newUser });
+  });
+
+  app.delete("/api/user/:slug", async (req, res) => {
+    const _id = new ObjectId(req.params.slug);
+
+    await User.findByIdAndDelete({ _id });
+
+    res.status(200).json({ message: "Deleted User" });
   });
 };
