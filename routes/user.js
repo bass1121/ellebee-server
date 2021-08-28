@@ -8,18 +8,13 @@ const { ObjectId } = require("mongodb");
 module.exports = app => {
   app.post("/api/users", async (req, res) => {
     // sign up user
-    console.log(req.body);
-
     if (req.body.signup) {
       const result = await User.findOne({ email: req.body.email }); // findOne checks for copycat emails and if true throws error
-
-      console.log(result);
 
       if (result) {
         res.status(422).json({ message: "Username already in use..." });
         return;
       }
-      console.log("signup");
 
       const hashedPassword = await hashPassword(req.body.password);
 
@@ -57,9 +52,6 @@ module.exports = app => {
     }
 
     // log in user
-
-    console.log("login");
-
     const { email, password } = req.body;
 
     const result = await User.findOne({ email });
@@ -94,6 +86,25 @@ module.exports = app => {
     res.status(200).send({ user, token });
   }); // specifications on data
 
+  app.post(`/api/user`, async (req, res) => {
+    const _id = new ObjectId(req.body._id);
+
+    const result = await User.findById({ _id });
+
+    const user = {
+      _id: result._id,
+      email: result.email,
+      admin: result.admin,
+      image: result.image,
+      username: result.username,
+      phoneNumber: result.phoneNumber,
+      firstName: result.firstName,
+      lastName: result.lastName,
+    };
+
+    res.status(200).json({ data: user });
+  });
+
   app.get(`/api/user/:slug`, async (req, res) => {
     const id = req.params.slug;
     const result = await User.findById(id);
@@ -124,8 +135,6 @@ module.exports = app => {
     };
 
     const _id = new ObjectId(req.params.slug);
-
-    console.log(user);
 
     const result = await User.findByIdAndUpdate({ _id }, user, {
       useFindAndModify: true,
